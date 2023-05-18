@@ -1,0 +1,16 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 100MB
+
+gcloud:
+  # val.json  100002910 - appId     塔吊吊装管理员履职识别 - 名称/字典   desc：【塔吊吊装管理员履职识别】 格式：”appId“:”描述的名称“
+  event-name: '{"100002910": "塔吊吊装管理员履职识别"}'
+  upload:
+    jky:
+      #  方案二（目前使用）
+      # 建科院 - 提供的地址
+      picUploadUrl: http://14.29.161.78:8822/api/iot/dataPush/dataReportGY
+      # 方案一的配置 （暂无用）
+      eventInfoUploadUrl: http://localhost:8080/eventInfo
