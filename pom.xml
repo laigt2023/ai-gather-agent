@@ -8,9 +8,9 @@
         <version>2.7.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.gcloud.demo</groupId>
-    <artifactId>uploaddemo</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <groupId>com.gcloud</groupId>
+    <artifactId>event-upload-server</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <name>uploaddemo</name>
     <description>uploaddemo</description>
     <properties>
