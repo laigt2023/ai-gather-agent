@@ -34,18 +34,21 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
 
         for (int i = 0; i < params.getFile().length; i++) {
             log.info("接收到文件名：{}",params.getFile()[i].getOriginalFilename());
-            if(params.getFile()[i].getOriginalFilename().endsWith(".json")){
+            String fileName = params.getFile()[i].getOriginalFilename();
+
+            if(fileName != null && fileName.toLowerCase().endsWith(".json")){
                 jsonFile = params.getFile()[i];
-            }else if(params.getFile()[i].getOriginalFilename().endsWith(".jpeg") || params.getFile()[i].getOriginalFilename().endsWith(".JPEG")){
+            }else if(fileName != null && (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg"))){
                 picFile = params.getFile()[i];
             }
         }
-        EventInfo eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
-        Map<String,String> paramMap = new HashMap<String,String>();
+//        EventInfo eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
+//        Map<String,String> paramMap = new HashMap<String,String>();
 
-        paramMap.put("description",eventNameMap.containsKey(eventInfo.getApp_id())?eventNameMap.get(eventInfo.getApp_id()):eventInfo.getApp_name() + "-设备名称：" + eventInfo.getSrc_name() + "，时间：" + DateUtil.format(DateUtil.date(eventInfo.getCreated()*1000L), "YYYY-MM-dd HH:mm:ss"));
+//        paramMap.put("description",eventNameMap.containsKey(eventInfo.getApp_id())?eventNameMap.get(eventInfo.getApp_id()):eventInfo.getApp_name() + "-设备名称：" + eventInfo.getSrc_name() + "，时间：" + DateUtil.format(DateUtil.date(eventInfo.getCreated()*1000L), "YYYY-MM-dd HH:mm:ss"));
         try {
-            HttpClientUtil.sendPostJson(uploadUrl, picFile, paramMap);
+//            log.info("上报事件信息：{}",JSON.toJSON(paramMap).toString());
+         //   HttpClientUtil.sendPostJson(uploadUrl, picFile, paramMap);
         } catch (Exception e) {
             log.error("上报事件信息失败，" + picFile.getOriginalFilename() + e.getMessage());
         }
