@@ -39,7 +39,7 @@ public class UploaddemoController {
             log.info(params.getFile()[i].getOriginalFilename());
             //把文件保存在本地
             try {
-                params.getFile()[i].transferTo(new File(saveDir + "\\" + params.getFile()[i].getOriginalFilename()));
+                params.getFile()[i].transferTo(new File(saveDir + File.separator + params.getFile()[i].getOriginalFilename()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
