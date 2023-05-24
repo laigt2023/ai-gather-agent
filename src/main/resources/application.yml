@@ -10,7 +10,8 @@ gcloud:
   # 上传文件保存路径
   # linux /home/gcloud/upload/
   # windows D:/gcloud/upload/
-  save-dir: /opt/gongdi/eventInfo/
+  upload-after-del: true
+  save-dir: D:/event-upload/
   upload:
     jky:
       #  方案二（目前使用）

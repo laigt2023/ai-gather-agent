@@ -67,6 +67,18 @@
             <artifactId>hutool-all</artifactId>
             <version>5.6.5</version>
         </dependency>
+        <!-- 上传文件的依赖 -->
+        <dependency>
+            <!--common-fileupload的依赖组件-->
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.4</version>
+        </dependency>
     </dependencies>
 
     <build>
