@@ -1,3 +1,5 @@
+server:
+  port: 13800
 spring:
   servlet:
     multipart:
@@ -5,18 +7,27 @@ spring:
       max-request-size: 100MB
 
 gcloud:
-  # val.json  100002910 - appId     塔吊吊装管理员履职识别 - 名称/字典   desc：【塔吊吊装管理员履职识别】 格式：”appId“:”描述的名称“
-  event-name: '{"100002910": "塔吊吊装管理员履职识别","100003304":"实名制通道-安全帽识别"}'
+  # val.json  100002910 - appId  塔吊吊装管理员履职识别 - 事件描述  格式：”appId“:”描述“
+  event-name: '{"100002910": "塔吊吊装管理员履职识别","100003428":"未带安全帽识别","100003304":"行人-电子围栏识别"}'
+  # 可发送的事件对应的skillType    （app_id:skillType）
+  # skillType 类型：
+  # 0抽烟行为检测，1烟火检测，2口罩佩戴检测，3睡岗检测，4车辆违规检测，5塔吊吊装管理员履职识别，6电子围栏，
+  # 7反光衣颜色识别 8安全帽颜色识别 9安全帽检测
+  event-skill-Type: '{"100002910":"5","100003428":"9","100002910":"5","100003304":"6"}'
+  # post-event: '{}'
+  # 是否发送上传事件
+  is-post-event: true
+  # 上传文件是否删除
+  upload-after-del: true
   # 上传文件保存路径
   # linux /home/gcloud/upload/
   # windows D:/gcloud/upload/
-  upload-after-del: true
   save-dir: D:/event-upload/
   upload:
     jky:
       #  方案二（目前使用）
       # 建科院 - 提供的地址
-#      picUploadUrl: http://14.29.161.78:8822/api/iot/dataPush/dataReportGY
-      picUploadUrl: http://127.0.0.1:8080/api/iot/dataPush/dataReportGY
+      picUploadUrl: http://14.29.161.78:8822/api/iot/dataPush/dataReportGY
+#      picUploadUrl: http://127.0.0.1:8080/api/iot/dataPush/dataReportGY
       # 方案一的配置 （暂无用）
       eventInfoUploadUrl: http://localhost:8080/eventInfo

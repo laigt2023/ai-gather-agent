@@ -41,11 +41,15 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
     @Value("#{${gcloud.event-name}}")
     private Map<String,String> eventNameMap;
 
+    @Value("#{${gcloud.event-skill-Type}}")
+    private Map<String,String> postEventSkillTypeMap;
     @Value("${gcloud.save-dir}")
     private String SAVE_DIR;
 
     @Value("${gcloud.upload-after-del}")
     private Boolean UPLOAD_AFTER_DEL;
+    @Value("${gcloud.is-post-event}")
+    private Boolean IS_POST_EVENT;
 
     @Override
     public void upload(UploaddemoParams params) {
@@ -94,25 +98,32 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
                 // 不为空的时候直接转换
                 eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
             }
-            saveAllFile(params);
 
             paramMap.put("description",eventNameMap.containsKey(eventInfo.getApp_id())?eventNameMap.get(eventInfo.getApp_id()):eventInfo.getApp_name() + "-设备名称：" + eventInfo.getSrc_name() + "，时间：" + DateUtil.format(DateUtil.date(eventInfo.getCreated()*1000L), "YYYY-MM-dd HH:mm:ss"));
             try {
-            log.info("上报事件信息：{}",JSON.toJSON(paramMap).toString());
-                   HttpClientUtil.sendPostJson(uploadUrl, picFile, paramMap);
 
+                   // 根据配置是否上报事件信息
+                   if(IS_POST_EVENT!=null && IS_POST_EVENT.booleanValue() == true ){
+                       if(postEventSkillTypeMap !=null && postEventSkillTypeMap.containsKey(eventInfo.getApp_id())) {
+                           String skillType = postEventSkillTypeMap.get(eventInfo.getApp_id());
+                           log.info("上报事件信息：{}", JSON.toJSON(paramMap).toString());
+                           HttpClientUtil.sendPostJson(uploadUrl, picFile, paramMap,skillType);
+                       }
+                   }
+
+                   saveAllFile(params);
                    // 如果配置了上传后删除，则删除
                    if(UPLOAD_AFTER_DEL && UPLOAD_AFTER_DEL.booleanValue()){
                        // 删除文件 .json .jpg .jpeg
-                       String picFileName = jsonFile.getOriginalFilename().replace(".json",".jpg");
-                       File jsonF = new File(getTodayFolderName() + File.separator + jsonFile.getOriginalFilename());
-                       File picF = new File(getTodayFolderName() + File.separator + picFileName);
-                       File jpegF = new File(getTodayFolderName() + File.separator + picFileName.replace(".jpg",".jpeg"));
+                       String picFileName = picFile.getOriginalFilename();
+                       File jpegF = new File(getTodayFolderName() + File.separator + picFile.getOriginalFilename());
+                       File jpgF = new File(getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg"));
+                       File jsonF = new File(getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".json"));
                        if(jsonF.exists()){
                            jsonF.delete();
                        }
-                       if(picF.exists()){
-                           picF.delete();
+                       if(jpgF.exists()){
+                           jpgF.delete();
                        }
                        if(jpegF.exists()){
                            jpegF.delete();

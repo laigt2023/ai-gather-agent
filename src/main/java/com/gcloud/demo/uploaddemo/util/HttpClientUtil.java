@@ -54,15 +54,17 @@ public class HttpClientUtil {
         return ret;
     }
 
-    public static String sendPostJson(String url, MultipartFile file, Map<String, String> params) throws Exception {
+    public static String sendPostJson(String url, MultipartFile file, Map<String, String> params,String skillType) throws Exception {
         CloseableHttpClient client = HttpClientBuilder.create().build();
         HttpPost request = new HttpPost(url);
 
         BASE64Encoder encoder = new BASE64Encoder();
 
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("projectId","1382169102120566786");
-        jsonObject.put("skillType",5);
+//        中建通旧项目地址
+//        jsonObject.put("projectId","1382169102120566786");
+        jsonObject.put("projectId","1645960692836073472");
+        jsonObject.put("skillType",skillType);
         jsonObject.put("renderImageBase64", ImageUtil.getImageStr(file.getInputStream()));
         for (Map.Entry<String, String> entry : params.entrySet()) {
             jsonObject.put(entry.getKey(),entry.getValue());
