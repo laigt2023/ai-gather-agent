@@ -16,6 +16,7 @@ import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
@@ -46,6 +47,8 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
     @Value("${gcloud.save-dir}")
     private String SAVE_DIR;
 
+    private String projectName = "";
+
     @Value("${gcloud.upload-after-del}")
     private Boolean UPLOAD_AFTER_DEL;
     @Value("${gcloud.is-post-event}")
@@ -55,6 +58,10 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
     public void upload(UploaddemoParams params) {
         MultipartFile picFile = null;
         MultipartFile jsonFile = null;
+
+        if(!StringUtils.isEmpty(params.getAppKeyID())){
+            projectName = params.getAppKeyID();
+        }
 
         for (int i = 0; i < params.getFile().length; i++) {
             log.info("接收到文件名：{}",params.getFile()[i].getOriginalFilename());
@@ -164,6 +171,12 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
     /* 获取今日日期的文件夹名称 */
     public String getTodayFolderName() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        // 如果配置了项目名称，则按照项目名称创建文件夹
+        if(!StringUtils.isEmpty(projectName)){
+            return SAVE_DIR + projectName + File.separator + sdf.format(new Date());
+        }
+
         return SAVE_DIR + sdf.format(new Date());
     }
     private FileItem getMultipartFile(File file, String fieldName) {
