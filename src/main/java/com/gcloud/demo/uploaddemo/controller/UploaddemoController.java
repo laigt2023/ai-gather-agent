@@ -1,8 +1,11 @@
 package com.gcloud.demo.uploaddemo.controller;
 
 import cn.hutool.http.server.HttpServerRequest;
+import com.gcloud.demo.uploaddemo.model.PredictVideoParams;
 import com.gcloud.demo.uploaddemo.params.EventInfoParams;
+import com.gcloud.demo.uploaddemo.params.TestReportParams;
 import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
+import com.gcloud.demo.uploaddemo.service.IPredictVideoService;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -28,7 +32,22 @@ public class UploaddemoController {
     @Resource
     IUploadToThirdPartyPlatformService uploadToThirdPartyPlatformService;
     @Resource
+    IPredictVideoService predictVideoService;
+
+
+    @Resource
     HttpServletRequest request;
+
+    // 推理视频接口（传参mp4，推理类型）
+    @PostMapping("/predictVideo")
+    public ResponseEntity upload(PredictVideoParams params){
+        Map<String,Object> result = new HashMap<String,Object>();
+        result.put("success","true");
+        result.put("code","200");
+        result.put("result",predictVideoService.downloadAndPredict(params));
+
+        return ResponseEntity.ok(result);
+    }
 
     // 上报数据
     @PostMapping("/upload")
@@ -42,5 +61,16 @@ public class UploaddemoController {
     public ResponseEntity upload(EventInfoParams params){
         log.info(params.getEventName() + " ," + params.getFileUrl());
         return ResponseEntity.ok("");
+    }
+
+
+    @PostMapping("/report")
+    public ResponseEntity report(@RequestBody TestReportParams params){
+        Map<String,Object> result = new HashMap<String,Object>();
+        result.put("success","true");
+        result.put("code","200");
+//        result.put("result",params);
+
+        return ResponseEntity.ok(result);
     }
 }
