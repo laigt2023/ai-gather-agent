@@ -1,23 +1,19 @@
-package com.gcloud.demo.uploaddemo.params;
+package com.gcloud.demo.uploaddemo.model;
 
-import org.springframework.web.multipart.MultipartFile;
-
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class TestReportParams {
-    private String siteID;
+public class BeijingEventUploadVo {
+    private String siteID="1";
+    private Integer type=2;
     private String alarmDate;
-
-    private Integer type;
     private String videoName;
-    private String eventType;
     private String cameraName;
-
+    private Integer eventType;
+    private Long alarmTime;
     private String alarmPicture;
-    private String alarmTime;
-
     private List<Map<String,Object>> info = new ArrayList<>();
 
     public String getSiteID() {
@@ -52,14 +48,6 @@ public class TestReportParams {
         this.videoName = videoName;
     }
 
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
-    }
-
     public String getCameraName() {
         return cameraName;
     }
@@ -68,8 +56,20 @@ public class TestReportParams {
         this.cameraName = cameraName;
     }
 
-    public List<Map<String, Object>> getInfo() {
-        return info;
+    public Integer getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(Integer eventType) {
+        this.eventType = eventType;
+    }
+
+    public Long getAlarmTime() {
+        return alarmTime;
+    }
+
+    public void setAlarmTime(Long alarmTime) {
+        this.alarmTime = alarmTime;
     }
 
     public String getAlarmPicture() {
@@ -80,16 +80,20 @@ public class TestReportParams {
         this.alarmPicture = alarmPicture;
     }
 
-    public String getAlarmTime() {
-        return alarmTime;
-    }
-
-    public void setAlarmTime(String alarmTime) {
-        this.alarmTime = alarmTime;
+    public List<Map<String, Object>> getInfo() {
+        return info;
     }
 
     public void setInfo(List<Map<String, Object>> info) {
         this.info = info;
     }
-}
 
+    public BeijingEventUploadVo() {
+        super();
+        this.siteID= "1";
+        this.type = 2;
+        this.alarmTime = System.currentTimeMillis();
+        // 获取当前时间的日期
+        this.alarmDate = new SimpleDateFormat("yyyy-MM-dd").format(alarmTime);
+    }
+}

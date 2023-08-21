@@ -23,6 +23,7 @@ import sun.misc.BASE64Encoder;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +51,23 @@ public class HttpClientUtil {
         log.info("rsp code:" + response.getStatusLine().getStatusCode());
         // return content
         String ret = readResponseContent(response.getEntity().getContent());
+        response.close();
+        return ret;
+    }
+
+    public static String sendPostJson(String url, JSONObject jsonObject) throws Exception {
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        HttpPost request = new HttpPost(url);
+        StringEntity se = new StringEntity(jsonObject.toString(), StandardCharsets.UTF_8);
+        se.setContentType("application/json");
+        se.setContentEncoding("UTF-8");
+        request.setEntity(se);
+        CloseableHttpResponse response = client.execute(request);
+        // read rsp code
+        log.info("rsp code:" + response.getStatusLine().getStatusCode());
+        // return content
+        String ret = readResponseContent(response.getEntity().getContent());
+        log.info("rsp content:" + ret);
         response.close();
         return ret;
     }

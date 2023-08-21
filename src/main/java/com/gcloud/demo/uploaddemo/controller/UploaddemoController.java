@@ -6,6 +6,7 @@ import com.gcloud.demo.uploaddemo.params.EventInfoParams;
 import com.gcloud.demo.uploaddemo.params.TestReportParams;
 import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
 import com.gcloud.demo.uploaddemo.service.IPredictVideoService;
+import com.gcloud.demo.uploaddemo.service.IUploadToBeijingPlatformService;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ import java.util.Map;
 public class UploaddemoController {
     @Resource
     IUploadToThirdPartyPlatformService uploadToThirdPartyPlatformService;
+
+    @Resource
+    IUploadToBeijingPlatformService uploadToBeijingPlatformService;
     @Resource
     IPredictVideoService predictVideoService;
 
@@ -41,6 +45,7 @@ public class UploaddemoController {
     // 推理视频接口（传参mp4，推理类型）
     @PostMapping("/predictVideo")
     public ResponseEntity upload(PredictVideoParams params){
+        log.info("type:" + params.getType() + "  downloadAddress   :" + params.getDownloadAddress());
         Map<String,Object> result = new HashMap<String,Object>();
         result.put("success","true");
         result.put("code","200");
@@ -57,6 +62,15 @@ public class UploaddemoController {
         uploadToThirdPartyPlatformService.upload(params);
         return ResponseEntity.ok("upload success");
     }
+
+    @PostMapping("/beijing/upload")
+    public ResponseEntity uploadBeijing(UploaddemoParams  params){
+        params.setAppKeyID(request.getHeader("AppKeyID"));
+        params.setAppKeySecret(request.getHeader("AppKeySecret"));
+        uploadToBeijingPlatformService.upload(params);
+        return ResponseEntity.ok("upload success");
+    }
+
     @PostMapping("/eventInfo")
     public ResponseEntity upload(EventInfoParams params){
         log.info(params.getEventName() + " ," + params.getFileUrl());
