@@ -157,21 +157,34 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        // 上报事件信息
                        BeijingEventUploadVo paramsVo = new BeijingEventUploadVo();
 
+
+
                        String skillType = postEventTypeMap.get(eventInfo.getApp_id());
 
-                       String picFileName = picFile.getOriginalFilename();
-                       String jpgFilePath = getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg");
+                       if(postEventTypeMap.containsKey(eventInfo.getApp_id())){
+                           String picFileName = picFile.getOriginalFilename();
+                           String jpgFilePath = getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg");
 
-                       paramsVo.setEventType(new Integer(skillType));
-                       paramsVo.setVideoName(videoName);
-                       paramsVo.setCameraName(cameraName);
-                       paramsVo.setAlarmPicture(ImageToBase64(jpgFilePath));
+                           paramsVo.setEventType(new Integer(skillType));
+                           paramsVo.setVideoName(videoName);
+                           paramsVo.setCameraName(cameraName);
+                           paramsVo.setAlarmPicture(ImageToBase64(jpgFilePath));
 
 
-                       JSONObject paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
-                       paramsJson.put("info",infos);
-                       log.info("上报事件信息：()"+ eventUploadUrl+"{}", JSON.toJSON(paramsJson).toString());
-                       HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
+                           JSONObject paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
+                           paramsJson.put("info",infos);
+
+                           JSONObject logJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
+                           logJson.put("info",infos);
+                           logJson.remove("alarmPicture");
+
+                           log.info("上报事件信息：()"+ eventUploadUrl+"{}", JSON.toJSON(logJson).toString());
+                           HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
+                       }else{
+                            log.info("未配置上报事件信息：()"+ eventInfo.getApp_id());
+                       }
+
+
                    }
                    // 保存文件
                    saveAllFile(params);
