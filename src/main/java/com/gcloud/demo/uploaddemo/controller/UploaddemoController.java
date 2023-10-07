@@ -1,8 +1,10 @@
 package com.gcloud.demo.uploaddemo.controller;
 
 import cn.hutool.http.server.HttpServerRequest;
+import com.alibaba.fastjson.JSONObject;
 import com.gcloud.demo.uploaddemo.model.PredictVideoParams;
 import com.gcloud.demo.uploaddemo.params.EventInfoParams;
+import com.gcloud.demo.uploaddemo.params.FaceFileParams;
 import com.gcloud.demo.uploaddemo.params.TestReportParams;
 import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
 import com.gcloud.demo.uploaddemo.service.IPredictVideoService;
@@ -69,6 +71,12 @@ public class UploaddemoController {
         params.setAppKeySecret(request.getHeader("AppKeySecret"));
         uploadToBeijingPlatformService.upload(params);
         return ResponseEntity.ok("upload success");
+    }
+
+    @PostMapping("/beijing/face")
+    public ResponseEntity uploadBeijingFace(FaceFileParams params){
+        JSONObject result = uploadToBeijingPlatformService.faceComparison(params);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/eventInfo")

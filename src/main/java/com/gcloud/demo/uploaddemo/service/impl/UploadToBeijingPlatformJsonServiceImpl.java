@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.gcloud.demo.uploaddemo.model.BeijingEventUploadVo;
 import com.gcloud.demo.uploaddemo.model.EventInfo;
+import com.gcloud.demo.uploaddemo.params.FaceFileParams;
 import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
 import com.gcloud.demo.uploaddemo.service.IUploadToBeijingPlatformService;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
@@ -49,6 +50,8 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
     private String eventUploadUrl;
     @Value("${gcloud.gddi.api-url}")
     private String gddiApiUrl;
+    @Value("${gcloud.beijing.ai-face-url}")
+    private String aiFaceUrl;
     @Value("${gcloud.gddi.api-token}")
     private String gddiApiToken;
     @Value("${gcloud.gddi.username}")
@@ -123,7 +126,7 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                    if(IS_POST_EVENT!=null && IS_POST_EVENT.booleanValue() == true ){
                        // 根据配置是否上报事件信息
 
-                       JSONArray infos = getInfoList(eventInfo);
+
                        CloseableHttpClient client = HttpClientBuilder.create().build();
                        HttpGet getRequest = new HttpGet(gddiApiUrl+"tasks/"+eventInfo.getTask_id());
 
@@ -149,6 +152,7 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        String videoName = data.getJSONObject("source").getString("name");
 
                        //通道号：获取流地址里的最后一个/和 01 或 02 中间的数字：例如：...Channels/3902，获取到的通道号是 39。...Channels/601，获取到的通道号是 6
+
                        String[] strArray = cameraUrl.split("/");
                        String cameraName = strArray[strArray.length-1];
                        cameraName = cameraName.substring(0, cameraName.length()-2);
@@ -164,12 +168,25 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        if(postEventTypeMap.containsKey(eventInfo.getApp_id())){
                            String picFileName = picFile.getOriginalFilename();
                            String jpgFilePath = getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg");
+                           // 图片转base64
+                           String img_base64 = ImageToBase64(jpgFilePath);
 
                            paramsVo.setEventType(new Integer(skillType));
                            paramsVo.setVideoName(videoName);
                            paramsVo.setCameraName(cameraName);
-                           paramsVo.setAlarmPicture(ImageToBase64(jpgFilePath));
+                           paramsVo.setAlarmPicture(img_base64);
 
+                           // 进行人脸识别
+                           JSONObject faceParamsJson = new JSONObject();
+                           faceParamsJson.put("base64_code",img_base64);
+                           String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
+                           JSONObject responseFaceJson = JSONObject.parseObject(responseStr);
+                           log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
+                           JSONObject faceInfo = responseFaceJson.getJSONObject("data").getJSONObject("face-info");
+                           System.out.println(responseStr);
+
+                           // 获取画框信息
+                           JSONArray infos = getInfoList(eventInfo);
 
                            JSONObject paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
                            paramsJson.put("info",infos);
@@ -209,6 +226,33 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             } catch (Exception e) {
                 log.error("上报事件信息失败，" + picFile.getOriginalFilename() + e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public JSONObject faceComparison(FaceFileParams params) {
+        JSONObject faceParamsJson = new JSONObject();
+        try {
+            if(params == null || params.getFile() == null){
+                throw new Exception("file is nul :: 图片参数不能为空");
+            }
+
+            byte[] bytes =  params.getFile().getBytes();
+
+            String img_base64 = Base64.getEncoder().encodeToString(bytes);
+            faceParamsJson.put("base64_code",img_base64);
+
+            if(params.getSim() != null){
+                faceParamsJson.put("sim",params.getSim());
+            }
+
+            String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
+            log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
+            return JSONObject.parseObject(responseStr);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

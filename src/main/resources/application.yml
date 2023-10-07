@@ -27,19 +27,23 @@ gcloud:
   # save-dir: /opt/gongdi/event-server/eventInfo/
   # video-save-dir: '/opt/gongdi/event-server/ai-video/'
   # 视频推理类型对应的AI服务接口地址
-  video-predict-type: '{"vest":"http://192.168.19.240:9090/api/inflet/v1/tasks/e30bb34a-dcd9-4d95-8714-38df8d680815/predict","helmet":"http://192.168.19.240:9090/api/inflet/v1/tasks/7f07d183-bc79-4d81-b624-8236bc95f337/predict"}'
+  video-predict-type: '{"vest":"http://192.168.19.251:9090/api/inflet/v1/tasks/e30bb34a-dcd9-4d95-8714-38df8d680815/predict","helmet":"http://192.168.19.240:9090/api/inflet/v1/tasks/7f07d183-bc79-4d81-b624-8236bc95f337/predict"}'
   # 1/2 意思是每隔2秒生成一张图片
   predict-frame-rate: '1/2'
   beijing:
     # 事件对应的视频推理类型  （app_id:videoType）事件类型：0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别 6-吸烟 7-人员聚集 17-电子围栏 9-车辆违停 11-睡岗
-    event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9"}'
+    # event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9"}'
+    # 人脸
+    event-Type: '{"100005429":"16"}'
     # 事件上报地址
     #event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
     event-upload-url: 'http://192.168.19.13:13800/report'
+    ai-face-url: 'http://192.168.19.25:8032/face'
 
   gddi:
-    api-url: 'http://192.168.19.53:9090/api/inflet/v1/'
-    api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxNDY0NjE5N30.S5_d1L0tcEcOja-JQTfXhKDX4RkcW7NOtvmxNm63UPw'
+    api-url: 'http://192.168.19.251:9090/api/inflet/v1/'
+    #api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxNDY0NjE5N30.S5_d1L0tcEcOja-JQTfXhKDX4RkcW7NOtvmxNm63UPw'
+    api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxNzk0OTUxNX0.8F7-kUvgDM4ysOtewHm6EKZUChcRonQxHLVJp5Ni4l0'
     username: 'admin'
     password: '123456'
 
