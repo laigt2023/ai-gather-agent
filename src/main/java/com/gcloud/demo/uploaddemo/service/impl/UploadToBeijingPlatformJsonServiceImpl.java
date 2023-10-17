@@ -69,11 +69,12 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
     @Value("${gcloud.is-post-event}")
     private Boolean IS_POST_EVENT;
 
+    @Value("${gcloud.beijing.face_max_offset}")
+    private int FACE_MAX_OFFSET = 200;
     @Override
     public void upload(UploaddemoParams params) {
         MultipartFile picFile = null;
         MultipartFile jsonFile = null;
-
         if(!StringUtils.isEmpty(params.getAppKeyID())){
             projectName = params.getAppKeyID();
         }
@@ -96,9 +97,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             }
         }
         //  上传顺序是jpg,json,jpeg
-        if( picFile !=null ){
-            Map<String,String> paramMap = new HashMap<String,String>();
-            EventInfo eventInfo = null;
+        if( picFile != null ){
+            EventInfo eventInfo;
+            String skillType = null;
             // 空的时候找本地文件
             if(jsonFile == null){
                 String jsonFileName = picFile.getOriginalFilename().replace(".jpeg",".json");
@@ -126,12 +127,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                    if(IS_POST_EVENT!=null && IS_POST_EVENT.booleanValue() == true ){
                        // 根据配置是否上报事件信息
 
-
+                       // 请求推理平台获取任务信息
                        CloseableHttpClient client = HttpClientBuilder.create().build();
                        HttpGet getRequest = new HttpGet(gddiApiUrl+"tasks/"+eventInfo.getTask_id());
-
-                       BASE64Encoder encoder = new BASE64Encoder();
-                       JSONObject jsonObject = new JSONObject();
 
                        // 设置token
                        getRequest.setHeader("Authentication", gddiApiToken);
@@ -141,18 +139,23 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        HttpEntity entity = response.getEntity();
                        String jsonString = EntityUtils.toString(entity);
                        JSONObject json = JSONObject.parseObject(jsonString);
-                       if(json.get("message")!=null && json.get("message").toString().length()>0){
-                           System.out.println("获取任务信息失败:("+ getRequest.getURI() +")");
-                           log.info("获取任务信息失败:("+ getRequest.getURI() +") ");
+                       if( json.get("message") != null && json.get("message").toString().length() > 0 ){
+                           log.info("获取任务信息失败:("+ getRequest.getURI() +") " + json.get("message").toString());
                            return;
                        }
+
                        System.out.println(gddiApiUrl+"/tasks/"+eventInfo.getTask_id());
+
+                       // 获取到当前上报事件的任务配置数据
                        JSONObject data = json.getJSONObject("data");
+                       // 摄像头地址
                        String cameraUrl = data.getJSONObject("source").getString("origin");
+                       // 数据源名称
                        String videoName = data.getJSONObject("source").getString("name");
 
-                       //通道号：获取流地址里的最后一个/和 01 或 02 中间的数字：例如：...Channels/3902，获取到的通道号是 39。...Channels/601，获取到的通道号是 6
-
+                       // 根基摄像头地址获取下来上报数据
+                       // 通道号：获取流地址里的最后一个/和 01 或 02 中间的数字：
+                       // 例如：...Channels/3902，获取到的通道号是 39。...Channels/601，获取到的通道号是 6
                        String[] strArray = cameraUrl.split("/");
                        String cameraName = strArray[strArray.length-1];
                        cameraName = cameraName.substring(0, cameraName.length()-2);
@@ -161,42 +164,113 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        // 上报事件信息
                        BeijingEventUploadVo paramsVo = new BeijingEventUploadVo();
 
+                       // application.yml中的配置：事件对应的视频推理类型  （app_id:videoType）事件类型：0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
+                       // 6-吸烟 7-人员聚集 17-电子围栏 9-车辆违停 11-睡岗 14-人脸（抓拍/识别）
+                       skillType = postEventTypeMap.get(eventInfo.getApp_id());
+
+                       // 上报事件图片转base64格式
+                       String picFileName = picFile.getOriginalFilename();
+                       String jpgFilePath = getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg");
+                       // 图片转base64
+                       String img_base64 = ImageToBase64(jpgFilePath);
 
 
-                       String skillType = postEventTypeMap.get(eventInfo.getApp_id());
-
+                       // 限制只上报配置中的任务事件
                        if(postEventTypeMap.containsKey(eventInfo.getApp_id())){
-                           String picFileName = picFile.getOriginalFilename();
-                           String jpgFilePath = getTodayFolderName() + File.separator + picFileName.replace(".jpeg",".jpg");
-                           // 图片转base64
-                           String img_base64 = ImageToBase64(jpgFilePath);
+                           JSONObject paramsJson;
+                           JSONArray infos = new JSONArray();
+                           JSONArray not_face_infos = new JSONArray();
 
+                           // 14为人脸考勤单独处理上报数据
+                           if(new Integer(skillType).intValue() == 14 ){
+                               JSONObject faceParamsJson = new JSONObject();
+                               faceParamsJson.put("base64_code",img_base64);
+                               String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
+                               JSONObject responseFaceJson = JSONObject.parseObject(responseStr);
+                               log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
+                               JSONArray faceArray = responseFaceJson.getJSONObject("data").getJSONArray("face-info");
+
+                               // 人脸识别不为空时，上报事件
+                               if(!faceArray.isEmpty()){
+                                   // 封装人脸信息
+                                   infos = getFaceInfoFormat(faceArray);
+
+                                   copyFaceFile(getTodayFolderName(),picFileName,faceArray);
+                               }
+
+                           }else if (new Integer(skillType).intValue() == 15 || new Integer(skillType).intValue() == 16 ){
+
+                               // 异常事件相关的人员进行人脸识别与身份匹配
+                               JSONObject faceParamsJson = new JSONObject();
+                               faceParamsJson.put("base64_code",img_base64);
+                               String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
+                               JSONObject responseFaceJson = JSONObject.parseObject(responseStr);
+                               log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
+                               JSONArray faceArray = responseFaceJson.getJSONObject("data").getJSONArray("face-info");
+                               System.out.println(responseStr);
+
+                               // 异常事件并进行人脸匹配
+                               JSONArray event_info_list = getInfoListByFaces(eventInfo,faceArray);
+                               for (int i =0;i<event_info_list.size();i++) {
+                                   JSONObject e = event_info_list.getJSONObject(i);
+
+                                   if(e.getString("cardId")!=null && !e.getString("cardId").equals("")){
+                                       infos.add(e);
+                                   }else{
+                                       not_face_infos.add(e);
+                                   }
+                               }
+
+
+                           }else{
+                               // 异常事件监控
+                               infos = getInfoList(eventInfo);
+                           }
+
+                           // 上报事件格式封装
                            paramsVo.setEventType(new Integer(skillType));
                            paramsVo.setVideoName(videoName);
                            paramsVo.setCameraName(cameraName);
-                           paramsVo.setAlarmPicture(img_base64);
 
-                           // 进行人脸识别
-                           JSONObject faceParamsJson = new JSONObject();
-                           faceParamsJson.put("base64_code",img_base64);
-                           String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
-                           JSONObject responseFaceJson = JSONObject.parseObject(responseStr);
-                           log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
-                           JSONObject faceInfo = responseFaceJson.getJSONObject("data").getJSONObject("face-info");
-                           System.out.println(responseStr);
-
-                           // 获取画框信息
-                           JSONArray infos = getInfoList(eventInfo);
-
-                           JSONObject paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
+                           paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
                            paramsJson.put("info",infos);
 
-                           JSONObject logJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
-                           logJson.put("info",infos);
-                           logJson.remove("alarmPicture");
+                           String logStr = JSON.toJSON(paramsJson).toString();
+                           // 上报时带上事件图片
+                           paramsJson.put("alarmPicture",img_base64);
 
-                           log.info("上报事件信息：()"+ eventUploadUrl+"{}", JSON.toJSON(logJson).toString());
-                           HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
+                           // 异常事件infos 不为空，只有人脸信息封装时，因为匹配精准度原因会出现空数组
+                           if(!infos.isEmpty()){
+                               log.info("上报事件信息：()"+ eventUploadUrl+"{}", logStr);
+                               String ret = HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
+                               log.info("上报事件SUCCESS：()"+ eventUploadUrl+"{}", ret);
+                           }else{
+                               log.info("暂无法匹配相关人脸信息，暂不上报事件：()"+ eventInfo.getApp_id());
+                               log.info("未上报事件数据："+ eventUploadUrl+"{}",jpgFilePath, logStr);
+                           }
+
+                           // skillType = 15 || 16 时，没有识别到人脸的事件归类到 普通事件监控中，0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
+                           if(!not_face_infos.isEmpty()){
+                               // eventType： 0-安全帽监测、15-安全帽+人脸识别
+                               if(new Integer(skillType).intValue() == 15){
+                                   paramsJson.put("eventType",0);
+                               }
+
+                               // eventType： 1-反光衣监测、16-反光衣+人脸识别
+                               if(new Integer(skillType).intValue() == 16){
+                                   paramsJson.put("eventType",1);
+                               }
+
+                               paramsJson.put("info",not_face_infos);
+                               paramsJson.put("alarmPicture","");
+                               logStr = JSON.toJSON(paramsJson).toString();
+                               // 上报时带上事件图片
+                               paramsJson.put("alarmPicture",img_base64);
+                               log.info("上报事件信息：()"+ eventUploadUrl+"{}", logStr);
+                               String ret = HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
+                               log.info("上报事件SUCCESS：()"+ eventUploadUrl+"{}", ret);
+                           }
+
                        }else{
                             log.info("未配置上报事件信息：()"+ eventInfo.getApp_id());
                        }
@@ -205,8 +279,8 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                    }
                    // 保存文件
                    saveAllFile(params);
-                   // 如果配置了上传后删除，则删除
-                   if(UPLOAD_AFTER_DEL && UPLOAD_AFTER_DEL.booleanValue()){
+                   // 如果配置了上传后删除，则删除, 或者为 14 - 人脸识别 则默认删除多余告警图片
+                   if((UPLOAD_AFTER_DEL && UPLOAD_AFTER_DEL.booleanValue()) || (skillType !=null && new Integer(skillType).intValue() == 14) ){
                        // 删除文件 .json .jpg .jpeg
                        String picFileName = picFile.getOriginalFilename();
                        File jpegF = new File(getTodayFolderName() + File.separator + picFile.getOriginalFilename());
@@ -298,7 +372,108 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
         return  base64Image;
     }
 
+    /**
+     * 获取异常事件信息并匹配人员人脸信息
+     * @param eventInfo 事件信息
+     * @param faceArray 人脸识别信息JSON数组
+     * @return 根据坐标匹配事件人员
+     */
+    private JSONArray getInfoListByFaces(EventInfo eventInfo,JSONArray faceArray){
+        JSONArray result = new JSONArray();
 
+        JSONArray array = JSONObject.parseArray(eventInfo.getDetails());
+        if(array == null || array.isEmpty()){
+            log.error("上报事件信息失败，"+ eventInfo.getEvent_id() +"的details为空");
+        }
+
+        JSONArray targets = array.getJSONObject(0).getJSONArray("targets");
+        if(array == null || array.isEmpty()){
+            log.error("上报事件信息失败，"+ eventInfo.getEvent_id()  +"的targets为空");
+        }
+
+        if(faceArray ==null || faceArray.isEmpty()){
+            log.error("上报事件信息失败::无人脸身份匹配信息，"+ eventInfo.getEvent_id());
+        }
+        // 遍历eventInfo 输出异常事件对象列表
+        for (int i =0;i<targets.size();i++){
+            JSONObject t = targets.getJSONObject(i);
+            String prob = t.getString("prob");
+            String label = t.getString("label");
+            JSONArray color = t.getJSONArray("color");
+            JSONObject box = t.getJSONObject("box");
+            int minX = (int) Math.floor(box.getDouble("left_top_x"));
+            int minY = (int) Math.floor(box.getDouble("left_top_y"));
+            int maxX = (int) Math.floor(box.getDouble("right_bottom_x"));
+            int maxY = (int) Math.floor(box.getDouble("right_bottom_y"));
+
+            JSONObject item = new JSONObject();
+            item.put("coordinate",minX+","+minY+","+maxX+","+maxY);
+            item.put("label",label);
+            item.put("color",rgbToHex(color.getInteger(0),color.getInteger(1),color.getInteger(2)));
+            item.put("confidence",prob);
+
+            String cardId = "";
+            // 寻找坐标最近的一个faceID
+            item.put("cardId",cardId);
+            result.add(item);
+        }
+
+        // 人脸信息匹配到最佳的事件上
+        // 遍历人脸，将人脸信息尽量匹配到异常事件上
+        for (int i =0;i<faceArray.size();i++) {
+            JSONObject face = faceArray.getJSONObject(i);
+            JSONArray box = face.getJSONArray("box");
+
+            int faceMiddleX = new Integer((box.getInteger(0) + box.getInteger(2)) / 2);
+            int faceMinY  = box.getInteger(1);
+
+            int current_face_match_index = -1;
+            int min_face_event_position = -1;
+            // 遍历异常事件列表，匹配与当前人脸信息相对位置最近的对象
+            for (int k =0;k<result.size();k++) {
+                // 获取每一个异常事件
+                JSONObject eventJsonInfo = result.getJSONObject(k);
+                String[] event_info_array = eventJsonInfo.getString("coordinate").split(",");
+                if(event_info_array !=null && event_info_array.length >= 4){
+                    int eventMiddleX = new Integer((new Integer(event_info_array[0]) + new Integer(event_info_array[2])) / 2);
+                    int eventMinY = new Integer(event_info_array[1]);
+
+                    // 筛选出位置最接近的event信息，并记录下标
+                    int absX = Math.abs((eventMiddleX - faceMiddleX));
+                    int absY = Math.abs((eventMinY - faceMinY));
+                    int absXY = absX + absY;
+                    if(min_face_event_position < 0 || absXY < min_face_event_position){
+                        min_face_event_position = absXY;
+                        current_face_match_index = k;
+                    }
+                }else{
+                    log.error("上报事件信息失败，coordinate异常事件坐标新为空："+eventJsonInfo.getString("coordinate") + ":"+ eventInfo.getEvent_id()  +"");
+                }
+            }
+            System.out.println("current_face_match_index:"+current_face_match_index);
+            System.out.println("min_face_event_position:"+min_face_event_position);
+            // 存在问题： 如果人脸在附近（距离小于FACE_MAX_OFFSET）， 目标事件的人脸有识别  会出现身份赋值错误
+            // min_face_event_position 最小距离  current_face_match_index 最佳匹配的人脸下标
+            if(min_face_event_position < FACE_MAX_OFFSET && current_face_match_index > 0){
+                String cardId = face.getString("name");
+                if(face.getString("name").split("_").length > 1){
+                    cardId = face.getString("name").split("_")[1];
+                }
+
+                result.getJSONObject(current_face_match_index).put("cardId",cardId);
+                result.getJSONObject(current_face_match_index).put("faceBox",box.getInteger(0)+","+box.getInteger(1)+","+box.getInteger(2)+","+box.getInteger(3));
+            }
+
+        }
+        // cardId为空的，证明人脸匹配失败
+        return result;
+    }
+
+    /**
+     * 获取异常事件信息
+     * @param eventInfo 事件信息
+     * @return 根据坐标匹配事件人员
+     */
     private JSONArray getInfoList(EventInfo eventInfo){
         JSONArray result = new JSONArray();
 
@@ -329,6 +504,86 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             item.put("color",rgbToHex(color.getInteger(0),color.getInteger(1),color.getInteger(2)));
             item.put("confidence",prob);
             item.put("cardId","");
+
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    // 将识别到face的图片保存到./face目录下
+    private static void copyFaceFile(String dir,String fileName,JSONArray faceArray){
+        String faceDir = dir + File.separator + "face" ;
+
+        if(!new File(faceDir).exists()){
+            new File(faceDir).mkdir();
+        }
+
+        String jpgFilePath = dir + File.separator + fileName.replace(".jpeg",".jpg");
+        // 复制到face目录下
+        String faceFilePath = faceDir + File.separator + fileName.replace(".jpeg",".jpg");
+        // 保存人脸识别数据
+        String josnFilePath = faceDir + File.separator + fileName.replace(".jpeg",".json");
+        try {
+            copyFileUsingStream(new File(jpgFilePath),new File(faceFilePath));
+        } catch (IOException e) {
+            log.info("人脸图片保存失败（" + jpgFilePath + ")");
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(josnFilePath))) {
+            writer.write(faceArray.toJSONString());
+        } catch (IOException e) {
+            log.info("人脸信息保存失败（" + josnFilePath + ")");
+        }
+    }
+    // 文件复制
+    private static void copyFileUsingStream(File source, File dest) throws IOException {
+        InputStream is = null;
+        OutputStream os = null;
+        try {
+            is = new FileInputStream(source);
+            os = new FileOutputStream(dest);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+        } finally {
+            is.close();
+            os.close();
+        }
+    }
+
+    /**
+     * 人脸信息格式
+     * @param faceArray 人脸识别信息JSON数组
+     * @return 封装为上报接口的数据结构
+     */
+    private JSONArray getFaceInfoFormat(JSONArray faceArray){
+        JSONArray result = new JSONArray();
+        String label = "face";
+        String color = "#FF0000";
+
+        for (int i =0;i<faceArray.size();i++){
+            JSONObject t = faceArray.getJSONObject(i);
+            String prob = t.getString("sim");
+            String cardId = "";
+            if(t.getString("name").split("_").length > 1){
+                cardId = t.getString("name").split("_")[1];
+            }
+
+            JSONArray box = t.getJSONArray("box");
+            int minX = (int) Math.floor(box.getFloat(0));
+            int minY = (int) Math.floor(box.getFloat(1));
+            int maxX = (int) Math.floor(box.getFloat(2));
+            int maxY = (int) Math.floor(box.getFloat(3));
+
+            JSONObject item = new JSONObject();
+            item.put("coordinate",minX+","+minY+","+maxX+","+maxY);
+            item.put("label",label);
+            item.put("color",color);
+            item.put("confidence",prob);
+            item.put("cardId",cardId);
 
             result.add(item);
         }
