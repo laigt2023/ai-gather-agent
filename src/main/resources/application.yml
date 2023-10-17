@@ -37,15 +37,15 @@ gcloud:
     # 人脸
     event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9","100005441":"14","100003428":"15","100004540":"16"}'
     # 事件上报地址
+    #event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
+    # event-upload-url: 'http://192.168.19.13:13800/report'
     event-upload-url: 'http://192.168.19.13:8032/face_report'
     ai-face-url: 'http://192.168.19.25:8032/face'
+    # ai-face-url: 'http://192.168.19.13:8032/face'
+    # 反光衣人头距离比较远，预计偏移量需要设置大一些
     face_max_offset: 100
 
   gddi:
-    api-url: 'http://192.168.19.245:9090/api/inflet/v1/'
-    #api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxNDY0NjE5N30.S5_d1L0tcEcOja-JQTfXhKDX4RkcW7NOtvmxNm63UPw'
-    # api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxNzk0OTUxNX0.8F7-kUvgDM4ysOtewHm6EKZUChcRonQxHLVJp5Ni4l0'
-    api-token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiJhZG1pbiIsIkFwcHMiOm51bGwsImV4cCI6NDgxODgxNDA2MH0.O7wSYxCPeFFDYGazeW972FtV0l4RLjgP55TMbj1YdWo'
     username: 'admin'
     password: '123456'
 

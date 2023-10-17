@@ -1,42 +1,34 @@
 package com.gcloud.demo.uploaddemo.service.impl;
 
-import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.gcloud.demo.uploaddemo.cache.TaskInfosCache;
 import com.gcloud.demo.uploaddemo.model.BeijingEventUploadVo;
 import com.gcloud.demo.uploaddemo.model.EventInfo;
 import com.gcloud.demo.uploaddemo.params.FaceFileParams;
 import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
 import com.gcloud.demo.uploaddemo.service.IUploadToBeijingPlatformService;
-import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
 import com.gcloud.demo.uploaddemo.util.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
-import sun.misc.BASE64Encoder;
 
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 //   北京工地上报方案实现
@@ -48,16 +40,8 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
     private Map<String,String> postEventTypeMap;
     @Value("${gcloud.beijing.event-upload-url}")
     private String eventUploadUrl;
-    @Value("${gcloud.gddi.api-url}")
-    private String gddiApiUrl;
     @Value("${gcloud.beijing.ai-face-url}")
     private String aiFaceUrl;
-    @Value("${gcloud.gddi.api-token}")
-    private String gddiApiToken;
-    @Value("${gcloud.gddi.username}")
-    private String gddiUsername;
-    @Value("${gcloud.gddi.password}")
-    private String gddiPassword;
 
     @Value("${gcloud.save-dir}")
     private String SAVE_DIR;
@@ -71,6 +55,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
 
     @Value("${gcloud.beijing.face_max_offset}")
     private int FACE_MAX_OFFSET = 200;
+
+    @Resource
+    private HttpServletRequest CURRENT_REQUEST;
     @Override
     public void upload(UploaddemoParams params) {
         MultipartFile picFile = null;
@@ -109,14 +96,6 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                 MultipartFile multipartFile = new CommonsMultipartFile(fileItem);
                 eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(multipartFile), EventInfo.class);
 
-//                File localFile= new File(getTodayFolderName() + File.separator + picFileName);
-//                FileItem fileItem = getMultipartFile(localFile, picFileName);
-//                MultipartFile multipartFile = new CommonsMultipartFile(fileItem);
-//                if(localFile.exists()){
-//                    picFile = multipartFile;
-//                }
-//                picFile = multipartFile.transferTo(f);
-                /* file 转 multipartFile */
             }else{
                 // 不为空的时候直接转换
                 eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
@@ -127,27 +106,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                    if(IS_POST_EVENT!=null && IS_POST_EVENT.booleanValue() == true ){
                        // 根据配置是否上报事件信息
 
-                       // 请求推理平台获取任务信息
-                       CloseableHttpClient client = HttpClientBuilder.create().build();
-                       HttpGet getRequest = new HttpGet(gddiApiUrl+"tasks/"+eventInfo.getTask_id());
+                       String taskIp = getIpAddr(CURRENT_REQUEST);
+                       JSONObject data = TaskInfosCache.getTaskInfo(taskIp,eventInfo.getTask_id());
 
-                       // 设置token
-                       getRequest.setHeader("Authentication", gddiApiToken);
-                       // send request
-                       CloseableHttpResponse response = client.execute(getRequest);
-
-                       HttpEntity entity = response.getEntity();
-                       String jsonString = EntityUtils.toString(entity);
-                       JSONObject json = JSONObject.parseObject(jsonString);
-                       if( json.get("message") != null && json.get("message").toString().length() > 0 ){
-                           log.info("获取任务信息失败:("+ getRequest.getURI() +") " + json.get("message").toString());
-                           return;
-                       }
-
-                       System.out.println(gddiApiUrl+"/tasks/"+eventInfo.getTask_id());
-
-                       // 获取到当前上报事件的任务配置数据
-                       JSONObject data = json.getJSONObject("data");
                        // 摄像头地址
                        String cameraUrl = data.getJSONObject("source").getString("origin");
                        // 数据源名称
@@ -178,26 +139,39 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                        // 限制只上报配置中的任务事件
                        if(postEventTypeMap.containsKey(eventInfo.getApp_id())){
                            JSONObject paramsJson;
-                           JSONArray infos = new JSONArray();
-                           JSONArray not_face_infos = new JSONArray();
+                           // 上报事件格式封装
+                           paramsVo.setEventType(new Integer(skillType));
+                           paramsVo.setVideoName(videoName);
+                           paramsVo.setCameraName(cameraName);
+                           paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
 
                            // 14为人脸考勤单独处理上报数据
+                           // 异常事件infos 不为空，只有人脸信息封装时，因为匹配精准度原因会出现空数组
                            if(new Integer(skillType).intValue() == 14 ){
                                JSONObject faceParamsJson = new JSONObject();
                                faceParamsJson.put("base64_code",img_base64);
                                String responseStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
                                JSONObject responseFaceJson = JSONObject.parseObject(responseStr);
-                               log.info("人脸识别事件信息：()"+ aiFaceUrl+"{}", responseStr);
+                               log.info("人脸识别请求信息：()"+ aiFaceUrl+"{}", responseStr);
                                JSONArray faceArray = responseFaceJson.getJSONObject("data").getJSONArray("face-info");
-
+                               JSONArray face_monitor_infos = new JSONArray();
                                // 人脸识别不为空时，上报事件
                                if(!faceArray.isEmpty()){
                                    // 封装人脸信息
-                                   infos = getFaceInfoFormat(faceArray);
-
+                                   face_monitor_infos = getFaceInfoFormat(faceArray);
+                                   // 将人脸识别成果的图片存储起来
                                    copyFaceFile(getTodayFolderName(),picFileName,faceArray);
                                }
 
+                               if (!face_monitor_infos.isEmpty()) {
+                                   reportSendHttpAndLog(paramsJson,face_monitor_infos,img_base64);
+                               } else {
+                                   String logStr = paramsJson.toJSONString();
+                                   log.info("暂无法匹配相关人脸信息，暂不上报事件：()" + eventInfo.getApp_id());
+                                   log.info("未上报事件数据：" + eventUploadUrl + "{}", jpgFilePath, logStr);
+                               }
+
+                           // skillType = 15 || 16 时，没有识别到人脸的事件归类到 普通事件监控中，0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
                            }else if (new Integer(skillType).intValue() == 15 || new Integer(skillType).intValue() == 16 ){
 
                                // 异常事件相关的人员进行人脸识别与身份匹配
@@ -211,65 +185,45 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
 
                                // 异常事件并进行人脸匹配
                                JSONArray event_info_list = getInfoListByFaces(eventInfo,faceArray);
+                               JSONArray has_face_infos = new JSONArray();
+                               JSONArray not_face_infos = new JSONArray();
                                for (int i =0;i<event_info_list.size();i++) {
                                    JSONObject e = event_info_list.getJSONObject(i);
 
                                    if(e.getString("cardId")!=null && !e.getString("cardId").equals("")){
-                                       infos.add(e);
+                                       has_face_infos.add(e);
                                    }else{
                                        not_face_infos.add(e);
                                    }
                                }
 
-
-                           }else{
-                               // 异常事件监控
-                               infos = getInfoList(eventInfo);
-                           }
-
-                           // 上报事件格式封装
-                           paramsVo.setEventType(new Integer(skillType));
-                           paramsVo.setVideoName(videoName);
-                           paramsVo.setCameraName(cameraName);
-
-                           paramsJson = JSONObject.parseObject(JSONObject.toJSON(paramsVo).toString());
-                           paramsJson.put("info",infos);
-
-                           String logStr = JSON.toJSON(paramsJson).toString();
-                           // 上报时带上事件图片
-                           paramsJson.put("alarmPicture",img_base64);
-
-                           // 异常事件infos 不为空，只有人脸信息封装时，因为匹配精准度原因会出现空数组
-                           if(!infos.isEmpty()){
-                               log.info("上报事件信息：()"+ eventUploadUrl+"{}", logStr);
-                               String ret = HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
-                               log.info("上报事件SUCCESS：()"+ eventUploadUrl+"{}", ret);
-                           }else{
-                               log.info("暂无法匹配相关人脸信息，暂不上报事件：()"+ eventInfo.getApp_id());
-                               log.info("未上报事件数据："+ eventUploadUrl+"{}",jpgFilePath, logStr);
-                           }
-
-                           // skillType = 15 || 16 时，没有识别到人脸的事件归类到 普通事件监控中，0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
-                           if(!not_face_infos.isEmpty()){
-                               // eventType： 0-安全帽监测、15-安全帽+人脸识别
-                               if(new Integer(skillType).intValue() == 15){
-                                   paramsJson.put("eventType",0);
+                               // 分批上报【人脸匹配】成功的事件
+                               if ( !has_face_infos.isEmpty() ) {
+                                   reportSendHttpAndLog(paramsJson,not_face_infos,img_base64);
                                }
 
-                               // eventType： 1-反光衣监测、16-反光衣+人脸识别
-                               if(new Integer(skillType).intValue() == 16){
-                                   paramsJson.put("eventType",1);
+                               // 分批上报【人脸匹配】不成功的事件，作为普通事件监控格式上报
+                               if ( !not_face_infos.isEmpty() ) {
+                                   // eventType： 0-安全帽监测、15-安全帽+人脸识别   设置为安全帽普通监控事件
+                                   if (new Integer(skillType).intValue() == 15) {
+                                       paramsJson.put("eventType", 0);
+                                   }
+
+                                   // eventType： 1-反光衣监测、16-反光衣+人脸识别 设置为反光衣普通监控事件
+                                   if (new Integer(skillType).intValue() == 16) {
+                                       paramsJson.put("eventType", 1);
+                                   }
+                                   reportSendHttpAndLog(paramsJson,not_face_infos,img_base64);
                                }
 
-                               paramsJson.put("info",not_face_infos);
-                               paramsJson.put("alarmPicture","");
-                               logStr = JSON.toJSON(paramsJson).toString();
-                               // 上报时带上事件图片
-                               paramsJson.put("alarmPicture",img_base64);
-                               log.info("上报事件信息：()"+ eventUploadUrl+"{}", logStr);
-                               String ret = HttpClientUtil.sendPostJson(eventUploadUrl,paramsJson);
-                               log.info("上报事件SUCCESS：()"+ eventUploadUrl+"{}", ret);
+                           }else{// 异常事件监控事件上报
+
+                               JSONArray common_event_infos = getInfoList(eventInfo);
+                               reportSendHttpAndLog(paramsJson,common_event_infos,img_base64);
                            }
+
+
+
 
                        }else{
                             log.info("未配置上报事件信息：()"+ eventInfo.getApp_id());
@@ -301,6 +255,25 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                 log.error("上报事件信息失败，" + picFile.getOriginalFilename() + e.getMessage());
             }
         }
+    }
+
+    /**
+     *  发送http事件上报请求，并记录返回日志
+     * @param paramsJson  params请求参数
+     * @param infos       人脸信息数组/普通事件数组
+     * @param img_base64  事件图片base64编码
+     * @throws Exception
+     */
+    private void reportSendHttpAndLog(JSONObject paramsJson,JSONArray infos,String img_base64) throws Exception {
+        paramsJson.put("info", infos);
+        paramsJson.put("alarmPicture", "");
+        String logStr = JSON.toJSON(paramsJson).toString();
+        // 上报时带上事件图片
+        paramsJson.put("alarmPicture", img_base64);
+        // 日志记录不带img_base64图片信息，减清日志文件大小
+        log.info("上报事件信息：()" + eventUploadUrl + "{}", logStr);
+        String ret = HttpClientUtil.sendPostJson(eventUploadUrl, paramsJson);
+        log.info("上报事件SUCCESS：()" + eventUploadUrl + "{}", ret);
     }
 
     @Override
@@ -626,6 +599,24 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
         return item;
     }
 
+    /**
+     * 获取请求方的真实IP
+     * @param request
+     * @return
+     */
+    public String getIpAddr(HttpServletRequest request) {
+        String ip = request.getHeader("x-forwarded-for");
+        if(ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if(ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if(ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
+    }
 //    public static MultipartFile convert(File file) throws IOException {
 //        DiskFileItem fileItem = new DiskFileItem("file",
 //                Files.probeContentType(file.toPath()), false,
