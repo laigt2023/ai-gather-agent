@@ -27,7 +27,7 @@ gcloud:
   # save-dir: /opt/gongdi/event-server/eventInfo/
   # video-save-dir: '/opt/gongdi/event-server/ai-video/'
   # 视频推理类型对应的AI服务接口地址
-  video-predict-type: '{"vest":"http://192.168.19.251:9090/api/inflet/v1/tasks/e30bb34a-dcd9-4d95-8714-38df8d680815/predict","helmet":"http://192.168.19.240:9090/api/inflet/v1/tasks/7f07d183-bc79-4d81-b624-8236bc95f337/predict"}'
+  video-predict-type: '{"vest":"http://192.168.19.53:9090/api/inflet/v1/tasks/7c41ab70-ba0f-4049-852a-cc81b3c6af40/predict","helmet":"http://192.168.19.53:9090/api/inflet/v1/tasks/787f2388-f4ff-40b6-9eb9-242944a22a7c/predict"}'
   # 1/2 意思是每隔2秒生成一张图片
   predict-frame-rate: '1/2'
   beijing:
@@ -37,13 +37,13 @@ gcloud:
     # 人脸
     event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9","100005441":"14","100003428":"15","100004540":"16"}'
     # 事件上报地址
-    #event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
+    # event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
     # event-upload-url: 'http://192.168.19.13:13800/report'
     event-upload-url: 'http://192.168.19.13:8032/face_report'
     ai-face-url: 'http://192.168.19.25:8032/face'
     # ai-face-url: 'http://192.168.19.13:8032/face'
     # 反光衣人头距离比较远，预计偏移量需要设置大一些
-    face_max_offset: 100
+    face_max_offset: 150
 
   gddi:
     username: 'admin'

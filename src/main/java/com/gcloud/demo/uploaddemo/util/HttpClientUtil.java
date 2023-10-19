@@ -64,10 +64,10 @@ public class HttpClientUtil {
         request.setEntity(se);
         CloseableHttpResponse response = client.execute(request);
         // read rsp code
-        log.info("rsp code:" + response.getStatusLine().getStatusCode());
+        log.info("rsp code:("+ url+ ")" + response.getStatusLine().getStatusCode());
         // return content
         String ret = readResponseContent(response.getEntity().getContent());
-        log.info("rsp content:" + ret);
+        log.info("rsp content:("+ url+ ")" + ret);
         response.close();
         return ret;
     }
@@ -116,6 +116,11 @@ public class HttpClientUtil {
         int len;
         while (inputStream.available() > 0) {
             len = inputStream.read(buf);
+
+            // 解决返回值数组越界问题
+            if(len <= -1){
+                return out.toString();
+            }
             out.write(buf, 0, len);
         }
 

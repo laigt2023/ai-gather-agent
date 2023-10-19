@@ -2,7 +2,7 @@ package com.gcloud.demo.uploaddemo.params;
 
 import org.springframework.web.multipart.MultipartFile;
 
-public class UploaddemoParams {
+public class RequestUploaddemoParams {
     private String file_name;
     private MultipartFile[] file;
 

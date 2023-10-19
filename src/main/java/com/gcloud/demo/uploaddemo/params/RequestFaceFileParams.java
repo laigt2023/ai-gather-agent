@@ -2,7 +2,7 @@ package com.gcloud.demo.uploaddemo.params;
 
 import org.springframework.web.multipart.MultipartFile;
 
-public class FaceFileParams {
+public class RequestFaceFileParams {
     private Float sim;
     private MultipartFile file;
 

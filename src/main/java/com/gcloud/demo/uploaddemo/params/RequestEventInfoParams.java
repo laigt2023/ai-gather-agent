@@ -1,6 +1,6 @@
 package com.gcloud.demo.uploaddemo.params;
 
-public class EventInfoParams {
+public class RequestEventInfoParams {
     private String fileUrl;
     private String eventName;
 

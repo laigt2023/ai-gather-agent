@@ -1,8 +1,8 @@
 package com.gcloud.demo.uploaddemo.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.gcloud.demo.uploaddemo.model.EventInfo;
-import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
+import com.gcloud.demo.uploaddemo.model.EventInfoVo;
+import com.gcloud.demo.uploaddemo.params.RequestUploaddemoParams;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
 import com.gcloud.demo.uploaddemo.util.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ public class UploadToThirdPartyPlatformServiceImpl implements IUploadToThirdPart
     private String eventInfoUrl;
 
     @Override
-    public void upload(UploaddemoParams params) {
+    public void upload(RequestUploaddemoParams params) {
         MultipartFile picFile = null;
         MultipartFile jsonFile = null;
         for (int i = 0; i < params.getFile().length; i++) {
@@ -40,10 +40,10 @@ public class UploadToThirdPartyPlatformServiceImpl implements IUploadToThirdPart
         Map result = HttpClientUtil.doPostFile(picFile, uploadUrl, uploadParams);
         log.info("上传图片成功，fileName：" + picFile.getName() + result);
 
-        EventInfo eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
+        EventInfoVo eventInfoVo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfoVo.class);
         Map<String, String> evetnParams = new HashMap<String, String>();
         evetnParams.put("fileUrl", result.get("fileUrl").toString());
-        evetnParams.put("eventName", eventInfo.getApp_name());
+        evetnParams.put("eventName", eventInfoVo.getApp_name());
         try {
             String rsp = HttpClientUtil.sendPostForm(eventInfoUrl, evetnParams);
             log.info("上传事件信息成功:" + evetnParams);

@@ -1,18 +1,13 @@
 package com.gcloud.demo.uploaddemo.controller;
 
-import cn.hutool.http.server.HttpServerRequest;
 import com.alibaba.fastjson.JSONObject;
 import com.gcloud.demo.uploaddemo.model.PredictVideoParams;
-import com.gcloud.demo.uploaddemo.params.EventInfoParams;
-import com.gcloud.demo.uploaddemo.params.FaceFileParams;
-import com.gcloud.demo.uploaddemo.params.TestReportParams;
-import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
+import com.gcloud.demo.uploaddemo.params.*;
 import com.gcloud.demo.uploaddemo.service.IPredictVideoService;
 import com.gcloud.demo.uploaddemo.service.IUploadToBeijingPlatformService;
 import com.gcloud.demo.uploaddemo.service.IUploadToThirdPartyPlatformService;
+import com.gcloud.demo.uploaddemo.thread.FaceImageComparisonThread;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,12 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,7 +48,7 @@ public class UploaddemoController {
 
     // 上报数据
     @PostMapping("/upload")
-    public ResponseEntity uploadJKY(UploaddemoParams  params){
+    public ResponseEntity uploadJKY(RequestUploaddemoParams params){
         params.setAppKeyID(request.getHeader("AppKeyID"));
         params.setAppKeySecret(request.getHeader("AppKeySecret"));
         uploadToThirdPartyPlatformService.upload(params);
@@ -66,7 +56,7 @@ public class UploaddemoController {
     }
 
     @PostMapping("/beijing/upload")
-    public ResponseEntity uploadBeijing(UploaddemoParams  params){
+    public ResponseEntity uploadBeijing(RequestUploaddemoParams params){
         params.setAppKeyID(request.getHeader("AppKeyID"));
         params.setAppKeySecret(request.getHeader("AppKeySecret"));
         uploadToBeijingPlatformService.upload(params);
@@ -74,20 +64,33 @@ public class UploaddemoController {
     }
 
     @PostMapping("/beijing/face")
-    public ResponseEntity uploadBeijingFace(FaceFileParams params){
+    public ResponseEntity uploadBeijingFace(RequestFaceFileParams params){
         JSONObject result = uploadToBeijingPlatformService.faceComparison(params);
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/beijing/face/image/report")
+    public ResponseEntity uploadBeijingFaceImageReport(@RequestBody RequestFaceImageComparisonParams params){
+        FaceImageComparisonThread task = new FaceImageComparisonThread();
+        task.startTaskByParams(params);
+
+        JSONObject resultMessage = new JSONObject();
+        resultMessage.put("status",true);
+        resultMessage.put("message","图片识别任务已开启,请耐心等待数据上报");
+        resultMessage.put("result",null);
+        resultMessage.put("timestamp",System.currentTimeMillis());
+        return ResponseEntity.ok(resultMessage);
+    }
+
     @PostMapping("/eventInfo")
-    public ResponseEntity upload(EventInfoParams params){
+    public ResponseEntity upload(RequestEventInfoParams params){
         log.info(params.getEventName() + " ," + params.getFileUrl());
         return ResponseEntity.ok("");
     }
 
 
     @PostMapping("/report")
-    public ResponseEntity report(@RequestBody TestReportParams params){
+    public ResponseEntity report(@RequestBody RequestTestReportParams params){
         Map<String,Object> result = new HashMap<String,Object>();
         result.put("success","true");
         result.put("code","200");

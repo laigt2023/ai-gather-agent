@@ -1,12 +1,10 @@
 package com.gcloud.demo.uploaddemo.params;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class TestReportParams {
+public class RequestTestReportParams {
     private String siteID;
     private String alarmDate;
 

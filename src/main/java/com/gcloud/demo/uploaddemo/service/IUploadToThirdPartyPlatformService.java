@@ -1,7 +1,7 @@
 package com.gcloud.demo.uploaddemo.service;
 
-import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
+import com.gcloud.demo.uploaddemo.params.RequestUploaddemoParams;
 
 public interface IUploadToThirdPartyPlatformService {
-    void upload(UploaddemoParams params);
+    void upload(RequestUploaddemoParams params);
 }

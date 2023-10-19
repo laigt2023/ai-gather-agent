@@ -1,6 +1,6 @@
 package com.gcloud.demo.uploaddemo.model;
 
-public class EventInfo {
+public class EventInfoVo {
     /*
     *{
 	"event_id": "2ac6754d-bb0b-42e9-a73b-46328aa7aa2f",

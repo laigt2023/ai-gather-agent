@@ -1,18 +1,15 @@
 package com.gcloud.demo.uploaddemo.service.impl;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.IoUtil;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.gcloud.demo.uploaddemo.model.EventInfo;
-import com.gcloud.demo.uploaddemo.params.UploaddemoParams;
+import com.gcloud.demo.uploaddemo.model.EventInfoVo;
+import com.gcloud.demo.uploaddemo.params.RequestUploaddemoParams;
 import com.gcloud.demo.uploaddemo.util.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -26,7 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,7 +51,7 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
     private Boolean IS_POST_EVENT;
 
     @Override
-    public void upload(UploaddemoParams params) {
+    public void upload(RequestUploaddemoParams params) {
         MultipartFile picFile = null;
         MultipartFile jsonFile = null;
 
@@ -83,7 +79,7 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
         //  上传顺序是jpg,json,jpeg
         if( picFile !=null ){
             Map<String,String> paramMap = new HashMap<String,String>();
-            EventInfo eventInfo = null;
+            EventInfoVo eventInfoVo = null;
             // 空的时候找本地文件
             if(jsonFile == null){
                 String jsonFileName = picFile.getOriginalFilename().replace(".jpeg",".json");
@@ -91,7 +87,7 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
 
                 FileItem fileItem = getMultipartFile(localJsonFile, jsonFileName);
                 MultipartFile multipartFile = new CommonsMultipartFile(fileItem);
-                eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(multipartFile), EventInfo.class);
+                eventInfoVo = JSON.parseObject(HttpClientUtil.readMultipartFile(multipartFile), EventInfoVo.class);
 
 //                File localFile= new File(getTodayFolderName() + File.separator + picFileName);
 //                FileItem fileItem = getMultipartFile(localFile, picFileName);
@@ -103,16 +99,16 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
                 /* file 转 multipartFile */
             }else{
                 // 不为空的时候直接转换
-                eventInfo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfo.class);
+                eventInfoVo = JSON.parseObject(HttpClientUtil.readMultipartFile(jsonFile), EventInfoVo.class);
             }
 
-            paramMap.put("description",eventNameMap.containsKey(eventInfo.getApp_id())?eventNameMap.get(eventInfo.getApp_id()):eventInfo.getApp_name() + "-设备名称：" + eventInfo.getSrc_name() + "，时间：" + DateUtil.format(DateUtil.date(eventInfo.getCreated()*1000L), "YYYY-MM-dd HH:mm:ss"));
+            paramMap.put("description",eventNameMap.containsKey(eventInfoVo.getApp_id())?eventNameMap.get(eventInfoVo.getApp_id()): eventInfoVo.getApp_name() + "-设备名称：" + eventInfoVo.getSrc_name() + "，时间：" + DateUtil.format(DateUtil.date(eventInfoVo.getCreated()*1000L), "YYYY-MM-dd HH:mm:ss"));
             try {
 
                    // 根据配置是否上报事件信息
                    if(IS_POST_EVENT!=null && IS_POST_EVENT.booleanValue() == true ){
-                       if(postEventSkillTypeMap !=null && postEventSkillTypeMap.containsKey(eventInfo.getApp_id())) {
-                           String skillType = postEventSkillTypeMap.get(eventInfo.getApp_id());
+                       if(postEventSkillTypeMap !=null && postEventSkillTypeMap.containsKey(eventInfoVo.getApp_id())) {
+                           String skillType = postEventSkillTypeMap.get(eventInfoVo.getApp_id());
                            log.info("上报事件信息：{}", JSON.toJSON(paramMap).toString());
                            HttpClientUtil.sendPostJson(uploadUrl, picFile, paramMap,skillType);
                        }
@@ -148,7 +144,7 @@ public class UploadToThirdPartyPlatformJsonServiceImpl implements IUploadToThird
      * 保存params中的所有文件
      * @param params
      */
-    private void saveAllFile(UploaddemoParams params){
+    private void saveAllFile(RequestUploaddemoParams params){
         String saveDir = getTodayFolderName();
         /* 判断目录是否存在，不存在则创建 */
         File directory = new File(saveDir);
