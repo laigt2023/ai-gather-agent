@@ -69,7 +69,7 @@ public class UploaddemoController {
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/beijing/face/image/report")
+    @PostMapping("/image/face_report")
     public ResponseEntity uploadBeijingFaceImageReport(@RequestBody RequestFaceImageComparisonParams params){
         FaceImageComparisonThread task = new FaceImageComparisonThread();
         task.startTaskByParams(params);

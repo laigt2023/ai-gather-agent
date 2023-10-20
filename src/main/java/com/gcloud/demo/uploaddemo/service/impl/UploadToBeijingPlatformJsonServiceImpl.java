@@ -349,13 +349,17 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
         }
 
         // 上报事件参数
-        JSONObject reportJson = new JSONObject();
-        reportJson.put("siteId",params.getSiteID());
-        reportJson.put("type",params.getType());
-        reportJson.put("videoName",params.getVideoName());
-        reportJson.put("eventType",params.getEventType());
-        reportJson.put("cameraName",params.getCameraName());
-        reportJson.put("alarmDate",params.getAlarmDate());
+//        JSONObject reportJson = new JSONObject();
+//        reportJson.put("siteID",params.getSiteID());
+//        reportJson.put("type",params.getType());
+//        reportJson.put("videoName",params.getVideoName());
+//        reportJson.put("eventType",params.getEventType());
+//        reportJson.put("cameraName",params.getCameraName());
+//        reportJson.put("alarmDate",params.getAlarmDate());
+
+        JSONObject reportJson = (JSONObject) JSONObject.toJSON(params);
+        // 暂时去除alarmPicture base64图片数据，优化日志大小
+        reportJson.put("alarmPicture","");
 
         // 获取当前时间的时间戳与日期
         Long alarmTime = System.currentTimeMillis();
