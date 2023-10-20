@@ -44,6 +44,8 @@ gcloud:
     # ai-face-url: 'http://192.168.19.13:8032/face'
     # 反光衣人头距离比较远，预计偏移量需要设置大一些
     face_max_offset: 150
+    # /face接口代理地址
+    face_http_proxy: http://192.168.19.25:13800
 
   gddi:
     username: 'admin'

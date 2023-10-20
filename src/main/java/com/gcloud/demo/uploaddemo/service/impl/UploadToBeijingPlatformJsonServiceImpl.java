@@ -264,8 +264,10 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
      * @throws Exception
      */
     private void reportSendHttpAndLog(JSONObject reportJson, List<ReportInfoItemVo> list, String img_base64) throws Exception {
-        JSONArray infos= JSONArray.parseArray(JSON.toJSONString(list));
-        reportSendHttpAndLog(reportJson,infos,img_base64);
+        if(list != null && !list.isEmpty()) {
+            JSONArray infos = JSONArray.parseArray(JSON.toJSONString(list));
+            reportSendHttpAndLog(reportJson, infos, img_base64);
+        }
     }
 
     /**
@@ -276,15 +278,17 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
      * @throws Exception
      */
     private void reportSendHttpAndLog(JSONObject reportJson,JSONArray infos,String img_base64) throws Exception {
-        reportJson.put("info", infos);
-        reportJson.put("alarmPicture", "");
-        String logStr = JSON.toJSON(reportJson).toString();
-        // 上报时带上事件图片
-        reportJson.put("alarmPicture", img_base64);
-        // 日志记录不带img_base64图片信息，减清日志文件大小
-        log.info("上报事件信息：()" + eventUploadUrl + "{}", logStr);
-        String ret = HttpClientUtil.sendPostJson(eventUploadUrl, reportJson);
-        log.info("上报事件SUCCESS：()" + eventUploadUrl + "{}", ret);
+        if(infos != null && !infos.isEmpty()){
+            reportJson.put("info", infos);
+            reportJson.put("alarmPicture", "");
+            String logStr = JSON.toJSON(reportJson).toString();
+            // 上报时带上事件图片
+            reportJson.put("alarmPicture", img_base64);
+            // 日志记录不带img_base64图片信息，减清日志文件大小
+            log.info("上报事件信息：()" + eventUploadUrl + "{}", logStr);
+            String ret = HttpClientUtil.sendPostJson(eventUploadUrl, reportJson);
+            log.info("上报事件SUCCESS：()" + eventUploadUrl + "{}", ret);
+        }
     }
 
     @Override
@@ -377,7 +381,7 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                 JSONObject imageEventInfo = responseEventJson.getJSONObject("data");
                 JSONArray eventArray = responseEventJson.getJSONObject("data").getJSONArray("targets");
 
-                if(eventArray == null || eventArray.size() == 0){
+                if(eventArray == null || eventArray.isEmpty()){
                     log.info("当前图片为识别未异常事件，请求图片识别服务url（"+ imagePredictUrl  +"）： targets为空");
                     return null;
                 }
