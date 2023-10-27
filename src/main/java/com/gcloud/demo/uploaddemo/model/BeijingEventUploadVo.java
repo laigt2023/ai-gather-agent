@@ -96,4 +96,13 @@ public class BeijingEventUploadVo {
         // 获取当前时间的日期
         this.alarmDate = new SimpleDateFormat("yyyy-MM-dd").format(alarmTime);
     }
+
+    public BeijingEventUploadVo(String siteID) {
+        super();
+        this.siteID= siteID;
+        this.type = 2;
+        this.alarmTime = System.currentTimeMillis();
+        // 获取当前时间的日期
+        this.alarmDate = new SimpleDateFormat("yyyy-MM-dd").format(alarmTime);
+    }
 }

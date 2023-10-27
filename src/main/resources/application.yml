@@ -27,25 +27,27 @@ gcloud:
   # save-dir: /opt/gongdi/event-server/eventInfo/
   # video-save-dir: '/opt/gongdi/event-server/ai-video/'
   # 视频推理类型对应的AI服务接口地址
-  video-predict-type: '{"vest":"http://192.168.19.53:9090/api/inflet/v1/tasks/7c41ab70-ba0f-4049-852a-cc81b3c6af40/predict","helmet":"http://192.168.19.53:9090/api/inflet/v1/tasks/787f2388-f4ff-40b6-9eb9-242944a22a7c/predict"}'
+  video-predict-type: '{"vest":"http://192.168.19.53:9090/api/inflet/v1/tasks/7c41ab70-ba0f-4049-852a-cc81b3c6af40/predict","helmet":"http://192.168.19.53:9090/api/inflet/v1/tasks/787f2388-f4ff-40b6-9eb9-242944a22a7c/predict","face":"http://192.168.19.245:9090/api/inflet/v1/tasks/26ee24f7-915f-4463-9603-418008a12a22/predict","smoke":"http://192.168.19.245:9090/api/inflet/v1/tasks/26ee24f7-915f-4463-9603-418008a12a22/predict"}'
   # 1/2 意思是每隔2秒生成一张图片
   predict-frame-rate: '1/2'
   beijing:
+    # 当前上报程序的项目ID
+    site-id: 36
     # 事件对应的视频推理类型  （app_id:videoType）事件类型：0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
     # 6-吸烟 7-人员聚集 17-电子围栏 9-车辆违停 11-睡岗 14-人脸（抓拍/识别）
     # event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9"}'
     # 人脸
     event-Type: '{"100004606":"0","100004540":"1","100004955":"7","100003304":"17","100004968":"9","100005441":"14","100003428":"15","100004540":"16"}'
     # 事件上报地址
-    # event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
+    event-upload-url: 'http://kc.scsc.tech/jeecg-boot/kc-helmet-service/tb/open/video/analysis'
     # event-upload-url: 'http://192.168.19.13:13800/report'
-    event-upload-url: 'http://192.168.19.13:8032/face_report'
+    # event-upload-url: 'http://192.168.19.13:8032/face_report'
     ai-face-url: 'http://192.168.19.25:8032/face'
     # ai-face-url: 'http://192.168.19.13:8032/face'
     # 反光衣人头距离比较远，预计偏移量需要设置大一些
     face_max_offset: 150
     # /face接口代理地址
-    face_http_proxy: http://192.168.19.25:13800
+    face_http_proxy: http://192.168.19.13:13800
 
   gddi:
     username: 'admin'

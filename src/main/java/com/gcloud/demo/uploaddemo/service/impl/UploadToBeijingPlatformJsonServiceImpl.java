@@ -57,6 +57,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
     @Value("${gcloud.beijing.face_max_offset}")
     private int FACE_MAX_OFFSET = 200;
 
+    @Value("${gcloud.beijing.site-id}")
+    private String CURRENT_SITE_ID;
+
     @Value("#{${gcloud.video-predict-type}}")
     private Map<String,String> predictUrlTypeMap;
 
@@ -128,7 +131,7 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
 
                        System.out.println("固定摄像头地址: (" + videoName + " ）" + cameraUrl);
                        // 上报事件信息
-                       BeijingEventUploadVo paramsVo = new BeijingEventUploadVo();
+                       BeijingEventUploadVo paramsVo = new BeijingEventUploadVo(CURRENT_SITE_ID);
 
                        // application.yml中的配置：事件对应的视频推理类型  （app_id:videoType）事件类型：0-安全帽监测、1-反光衣监测、15-安全帽+人脸识别、16-反光衣+人脸识别
                        // 6-吸烟 7-人员聚集 17-电子围栏 9-车辆违停 11-睡岗 14-人脸（抓拍/识别）
@@ -336,6 +339,10 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             return result;
         }
 
+        if(params.getEventType().intValue() == 7){
+            imagePredictUrl = predictUrlTypeMap.get("smoke");
+        }
+
         if(params.getEventType().intValue() == 14){
             imagePredictUrl = predictUrlTypeMap.get("face");
         }
@@ -363,6 +370,9 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
 
         // 获取当前时间的时间戳与日期
         Long alarmTime = System.currentTimeMillis();
+        if(params.getAlarmTime() != null){
+            alarmTime = params.getAlarmTime();
+        }
         if(params.getAlarmDate()==null || params.getAlarmDate().length() ==0){
             String alarmDate = new SimpleDateFormat("yyyy-MM-dd").format(alarmTime);
             reportJson.put("alarmDate", alarmDate);

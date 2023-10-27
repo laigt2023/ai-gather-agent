@@ -21,7 +21,7 @@ public class RequestFaceImageComparisonParams {
     // 告警图片(base64，不带前缀data:image/jpeg;base64,)
     private String alarmPicture;
     // 告警时间 时间戳，到（毫秒）
-    private String alarmTime;
+    private Long alarmTime;
 
     private List<Map<String,Object>> info = new ArrayList<>();
 
@@ -85,11 +85,11 @@ public class RequestFaceImageComparisonParams {
         this.alarmPicture = alarmPicture;
     }
 
-    public String getAlarmTime() {
+    public Long getAlarmTime() {
         return alarmTime;
     }
 
-    public void setAlarmTime(String alarmTime) {
+    public void setAlarmTime(Long alarmTime) {
         this.alarmTime = alarmTime;
     }
 
