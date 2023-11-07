@@ -83,11 +83,14 @@ public class HttpClientUtil {
 //        jsonObject.put("projectId","1382169102120566786");
         jsonObject.put("projectId","1645960692836073472");
         jsonObject.put("skillType",skillType);
-        jsonObject.put("renderImageBase64", ImageUtil.getImageStr(file.getInputStream()));
+
         for (Map.Entry<String, String> entry : params.entrySet()) {
             jsonObject.put(entry.getKey(),entry.getValue());
         }
         log.info("jsonObject:" + jsonObject.toString());
+
+        // 日志中不记录图片的base64数据，降低日志压力
+        jsonObject.put("renderImageBase64", ImageUtil.getImageStr(file.getInputStream()));
 
         StringEntity se = new StringEntity(jsonObject.toString());
         se.setContentType("application/json");

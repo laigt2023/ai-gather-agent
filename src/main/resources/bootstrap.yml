@@ -1,0 +1,27 @@
+server:
+  port: 13800
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 100MB
+  application:
+    name: ai-gather-agent    #????
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos
+      profiles:
+        active: dev
+      discovery:
+        server-addr: http://192.168.19.88:8848
+        enabled: true
+      config:
+        enabled: true
+        file-extension: yaml #??????? properties ? yaml ??
+        auto-refresh: true
+        enable-remote-sync-config: true #????????,
+        timeout: 3000
+        group: DEFAULT_GROUP  #???
+        refresh-enabled: true
+        server-addr: http://192.168.19.88:8848

@@ -18,6 +18,7 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,6 +37,7 @@ import java.util.*;
 @Primary
 @Slf4j
 @Service
+@RefreshScope
 public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingPlatformService{
     @Value("#{${gcloud.beijing.event-Type}}")
     private Map<String,String> postEventTypeMap;
@@ -339,7 +341,7 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             return result;
         }
 
-        if(params.getEventType().intValue() == 7){
+        if(params.getEventType().intValue() == 6 || params.getEventType().intValue() == 20){
             imagePredictUrl = predictUrlTypeMap.get("smoke");
         }
 
@@ -347,11 +349,11 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
             imagePredictUrl = predictUrlTypeMap.get("face");
         }
 
-        if(params.getEventType().intValue() == 15){
+        if(params.getEventType().intValue() == 15 || params.getEventType().intValue() == 0){
             imagePredictUrl = predictUrlTypeMap.get("helmet");
         }
 
-        if(params.getEventType().intValue() == 16){
+        if(params.getEventType().intValue() == 16 || params.getEventType().intValue() == 1){
             imagePredictUrl = predictUrlTypeMap.get("vest");
         }
 
@@ -418,11 +420,14 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                         reportSendHttpAndLog(reportJson,face_monitor_infos,params.getAlarmPicture());
                     }
 
-                }else if (params.getEventType().intValue() == 15 || params.getEventType().intValue() == 16 ){
+                }else if (params.getEventType().intValue() == 15 || params.getEventType().intValue() == 16 || params.getEventType().intValue() == 20 ){
                     String img_base64 = params.getAlarmPicture();
 
                     // 异常事件相关的人员进行人脸识别与身份匹配
                     JSONObject faceParamsJson = new JSONObject();
+                    if(params.getSim() != null){
+                        faceParamsJson.put("sim",params.getSim());
+                    }
                     faceParamsJson.put("base64_code",img_base64);
                     String responseFaceStr = HttpClientUtil.sendPostJson(aiFaceUrl,faceParamsJson);
                     JSONObject responseFaceJson = JSONObject.parseObject(responseFaceStr);
@@ -460,9 +465,20 @@ public class UploadToBeijingPlatformJsonServiceImpl implements IUploadToBeijingP
                         if (params.getEventType().intValue() == 16) {
                             reportJson.put("eventType", 1);
                         }
+
+                        // eventType： 6-吸烟、20-吸烟+人脸识别 设置为吸烟普通监控事件
+                        if (params.getEventType().intValue() == 20) {
+                            reportJson.put("eventType", 6);
+                        }
                         reportSendHttpAndLog(reportJson,not_face_infos,img_base64);
                     }
 
+                }else if (params.getEventType().intValue() == 0 || params.getEventType().intValue() == 1 || params.getEventType().intValue() == 6 ){
+                    // 0=安全帽监测、1=反光衣监测
+
+                    String img_base64 = params.getAlarmPicture();
+                    List<ReportInfoItemVo> common_event_list = imageEventInfoMatchFaces(imageEventInfo,new ArrayList<FaceItemVo>());
+                    reportSendHttpAndLog(reportJson,common_event_list,img_base64);
                 }
             } catch (Exception e) {
                 JSONObject resultError = new JSONObject();

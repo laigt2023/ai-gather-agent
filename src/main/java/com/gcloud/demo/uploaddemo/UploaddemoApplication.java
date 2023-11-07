@@ -5,6 +5,7 @@ import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 @SpringBootApplication
+@EnableDiscoveryClient
 public class UploaddemoApplication {
 
     public static void main(String[] args) {

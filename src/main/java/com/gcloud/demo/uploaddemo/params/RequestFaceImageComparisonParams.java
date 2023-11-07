@@ -23,6 +23,8 @@ public class RequestFaceImageComparisonParams {
     // 告警时间 时间戳，到（毫秒）
     private Long alarmTime;
 
+    // 人脸识别最低匹配度
+    private Float sim;
     private List<Map<String,Object>> info = new ArrayList<>();
 
     public String getSiteID() {
@@ -95,6 +97,14 @@ public class RequestFaceImageComparisonParams {
 
     public void setInfo(List<Map<String, Object>> info) {
         this.info = info;
+    }
+
+    public Float getSim() {
+        return sim;
+    }
+
+    public void setSim(Float sim) {
+        this.sim = sim;
     }
 }
 
