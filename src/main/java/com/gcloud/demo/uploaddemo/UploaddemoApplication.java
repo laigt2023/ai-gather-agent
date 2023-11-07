@@ -3,6 +3,7 @@ package com.gcloud.demo.uploaddemo;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -16,6 +17,7 @@ import java.io.OutputStream;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@MapperScan("com.gcloud.demo.uploaddemo.mybatisplus")
 public class UploaddemoApplication {
 
     public static void main(String[] args) {

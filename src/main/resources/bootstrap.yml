@@ -6,7 +6,12 @@ spring:
       max-file-size: 20MB
       max-request-size: 100MB
   application:
-    name: ai-gather-agent    #????
+    name: ai-gather-agent
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+    url: jdbc:mysql://192.168.19.88:3306/ai_manage?useUnicode=true&characterEncoding=utf8
   cloud:
     nacos:
       username: nacos
@@ -18,10 +23,10 @@ spring:
         enabled: true
       config:
         enabled: true
-        file-extension: yaml #??????? properties ? yaml ??
+        file-extension: yaml
         auto-refresh: true
-        enable-remote-sync-config: true #????????,
+        enable-remote-sync-config: true
         timeout: 3000
-        group: DEFAULT_GROUP  #???
+        group: DEFAULT_GROUP
         refresh-enabled: true
         server-addr: http://192.168.19.88:8848
