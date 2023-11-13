@@ -1,10 +1,12 @@
 package com.gcloud.demo.uploaddemo.util;
 
+import com.gcloud.demo.uploaddemo.exception.GcException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 import sun.misc.BASE64Encoder;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletResponse;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -187,4 +189,60 @@ public class ImageUtil {
         System.out.println(imageBase);
     }
 
+    /**
+     * 将图片字符流传入response中，并显示指定文件名称
+     * @param response
+     * @param file  图片文件
+     * @param showFileName  指定文件名称
+     * @return
+     */
+    public static HttpServletResponse responsePushImage(HttpServletResponse  response, File file,String showFileName) {
+        OutputStream outputStream = null;
+        FileInputStream fileInput = null;
+
+        String contentType = "image/jpeg";
+        String suffix = "jpg";
+        if(file.getName().lastIndexOf(".") > -1){
+            suffix = file.getName().toLowerCase().substring(file.getName().lastIndexOf("."),file.getName().length());
+//            contentType = "image/" + showFileName + suffix;
+        }
+
+         // image/jpg  image/jpeg  image/png
+
+        response.addHeader("Content-Disposition", "filename=" + showFileName + suffix);
+        response.setCharacterEncoding("utf-8");
+        response.setContentType(contentType);
+
+        if (file == null || !file.exists()) {
+            throw new GcException("file_util_file_is_not_exists_001::文件不存在");
+        }
+
+        try {
+            fileInput = new FileInputStream(file);
+            outputStream = response.getOutputStream();
+            int count = 0;
+            byte[] buffer = new byte[1024 * 8];
+            while ((count = fileInput.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, count);
+                outputStream.flush();
+            }
+        } catch (Exception e) {
+
+            throw new GcException("file_util_file_stream_create_error_001::文件流获取错误");
+        } finally {
+            try {
+                if (fileInput != null) {
+                    fileInput.close();
+                }
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            } catch (IOException e) {
+
+                throw new GcException("file_util_file_stream_close_error_002::文件流关闭错误");
+            }
+        }
+
+        return response;
+    }
 }

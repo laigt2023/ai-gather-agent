@@ -39,6 +39,8 @@ gcloud:
     face_max_offset: 150
     # /face接口代理地址
     face_http_proxy: localhost:13800
+    # 人脸数据库文件保存路径
+    face_file_save_dir: D:/event-upload/TAI_YUAN_FACE_DB
 
   gddi:
     username: 'admin'

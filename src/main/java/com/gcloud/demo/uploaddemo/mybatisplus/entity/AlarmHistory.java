@@ -16,7 +16,7 @@ public class AlarmHistory {
     private Long id;
     // 告警类型：1=智能安全帽、2=固定摄像头
     @TableField(value="site_id")
-    private Long siteID;
+    private String siteID;
     // 项目ID
     private Long type;
     // 告警时间戳（毫秒）
@@ -33,6 +33,10 @@ public class AlarmHistory {
     private String alarmPictureUrl;
     // 图片base64
     private String alarmPicture;
+    // 告警图片文件UUID
+    private String alarmFileUuid;
+    // 人脸身份证ID
+    private String faceIdCard;
 
     private String info;
 }

@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class RequestAlarmHistoryPageParams extends BasePageParams{
-    private Long siteID;
+    private String siteID;
     // 项目ID
     private Long type;
     // 告警时间戳（毫秒）

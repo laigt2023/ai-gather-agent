@@ -7,7 +7,7 @@ import com.gcloud.demo.uploaddemo.params.RequestAlarmHistoryReportParams;
 
 import java.util.List;
 
-public interface IAlarmHistory {
+public interface IAlarmHistoryService {
     List<AlarmHistory> list(RequestAlarmHistoryPageParams params);
 
     IPage<AlarmHistory> page(RequestAlarmHistoryPageParams params);

@@ -7,7 +7,7 @@ import java.util.Map;
 
 @Data
 public class RequestAlarmHistoryReportParams {
-    private Long siteID;
+    private String siteID;
     // 项目ID
     private Long type;
     // 告警时间戳（毫秒）
